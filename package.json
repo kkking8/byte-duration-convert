@@ -1,0 +1,16 @@
+{
+  "name": "byte-duration-convert",
+  "version": "0.1.0",
+  "description": "Convert byte sizes and durations between human-readable and raw numeric form",
+  "type": "module",
+  "bin": {
+    "unitconv": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "license": "MIT"
+}
