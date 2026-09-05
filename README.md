@@ -12,11 +12,16 @@ given, so it drops into a pipeline the same way `sort` or `tr` does.
 ## Usage
 
 ```
-unitconv --kind=size|duration [--to=raw|human] [--binary] [file...]
+unitconv [--kind=size|duration] [--to=raw|human] [--binary] [file...]
 ```
 
-- `--kind` is required: tell it whether each line is a byte size or a
-  duration. (The tool doesn't guess yet - see roadmap.)
+- `--kind` tells it whether each line is a byte size or a duration. It's
+  optional when converting human notation to raw numbers: size units
+  (`b`, `kb`, `mib`, ...) and duration units (`ns`, `s`, `h`, ...) never
+  overlap, so each line can be classified on its own. A bare number with
+  no unit is ambiguous and needs an explicit `--kind`, and so does
+  `--to=human`, since a raw byte count and a raw second count look the
+  same on the page.
 - `--to` picks the output form. Default is `raw`.
 - `--binary` uses KiB/MiB/GiB instead of KB/MB/GB when formatting sizes
   as human-readable (`--to=human`).
@@ -25,10 +30,11 @@ unitconv --kind=size|duration [--to=raw|human] [--binary] [file...]
 
 ### Examples
 
-Convert human-readable sizes to bytes:
+Convert human-readable sizes to bytes (no `--kind` needed, the `GiB`
+suffix is unambiguous):
 
 ```
-$ echo "1.5GiB" | unitconv --kind=size
+$ echo "1.5GiB" | unitconv
 1610612736
 ```
 
@@ -42,7 +48,7 @@ $ echo "1610612736" | unitconv --kind=size --to=human
 Convert a duration string to seconds:
 
 ```
-$ echo "1h30m15s" | unitconv --kind=duration
+$ echo "1h30m15s" | unitconv
 5415
 ```
 
@@ -84,4 +90,5 @@ node dist/cli.js --kind=size < sizes.txt
 ## Roadmap
 
 See open items in the repository for what's planned next, including
-auto-detecting size vs. duration lines without `--kind`.
+unit tests for the parse/format round-trips and better error messages
+that point at the offending line number.

@@ -8,10 +8,32 @@ type Kind = 'size' | 'duration';
 type Direction = 'raw' | 'human';
 
 interface Options {
-  kind: Kind;
+  kind?: Kind;
   to: Direction;
   binary: boolean;
   files: string[];
+}
+
+// Size and duration unit suffixes never overlap (b/kb/mb/... vs ns/us/ms/s/m/h/d),
+// so a value with a unit can only parse as one of the two. A bare number has no
+// unit to go on, so it stays ambiguous and needs an explicit --kind.
+function detectKind(value: string): Kind {
+  if (/^[0-9]*\.?[0-9]+$/.test(value)) {
+    throw new Error(`cannot tell if "${value}" is a size or a duration without a unit; use --kind to specify`);
+  }
+  try {
+    parseByteSize(value);
+    return 'size';
+  } catch {
+    // not a recognized byte size; fall through to try duration
+  }
+  try {
+    parseDuration(value);
+    return 'duration';
+  } catch {
+    // fall through to the generic error below
+  }
+  throw new Error(`cannot tell if "${value}" is a size or a duration; use --kind to specify`);
 }
 
 function convertLine(line: string, opts: Options): string {
@@ -19,7 +41,8 @@ function convertLine(line: string, opts: Options): string {
   if (trimmed === '' || trimmed.startsWith('#')) {
     return line;
   }
-  if (opts.kind === 'size') {
+  const kind = opts.kind ?? detectKind(trimmed);
+  if (kind === 'size') {
     return opts.to === 'raw'
       ? String(parseByteSize(trimmed))
       : formatByteSize(Number(trimmed), { binary: opts.binary });
@@ -40,15 +63,21 @@ async function processSource(source: NodeJS.ReadableStream, opts: Options): Prom
 }
 
 function printHelp(): void {
-  console.log(`usage: unitconv --kind=size|duration [--to=raw|human] [--binary] [file...]
+  console.log(`usage: unitconv [--kind=size|duration] [--to=raw|human] [--binary] [file...]
 
 Converts byte-size or duration values between human-readable notation and
 raw numeric form (bytes for sizes, seconds for durations). Reads from the
 given files, or from stdin if no files are given. One value per line;
 blank lines and lines starting with # pass through unchanged.
 
+--kind is optional when converting human notation to raw numbers: each
+line is inspected for a size or duration unit and classified on its own.
+It's required for --to=human, since a raw number alone doesn't say
+whether it's a byte count or a second count.
+
 Examples:
-  echo "1.5GiB" | unitconv --kind=size
+  echo "1.5GiB" | unitconv
+  echo "1h30m" | unitconv
   unitconv --kind=duration --to=human durations.txt
   unitconv --kind=size --to=human --binary < sizes.txt`);
 }
@@ -84,9 +113,6 @@ function parseArgs(argv: string[]): Options {
     }
   }
 
-  if (!kind) {
-    throw new Error('missing required --kind=size|duration');
-  }
   return { kind, to, binary, files };
 }
 
