@@ -87,8 +87,14 @@ npm run build
 node dist/cli.js --kind=size < sizes.txt
 ```
 
+Tests use the built-in `node:test` runner, compiled separately from the
+`dist/` build so test code never ships in the published package:
+
+```
+npm test
+```
+
 ## Roadmap
 
 See open items in the repository for what's planned next, including
-unit tests for the parse/format round-trips and better error messages
-that point at the offending line number.
+better error messages that point at the offending line number.
