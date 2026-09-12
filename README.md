@@ -27,6 +27,10 @@ unitconv [--kind=size|duration] [--to=raw|human] [--binary] [file...]
   as human-readable (`--to=human`).
 - Blank lines and lines starting with `#` pass through unchanged, so you
   can convert an annotated config file in place.
+- Bad input on one line doesn't stop the rest: the error goes to stderr
+  tagged with the source and line number (`stdin:3: ...` or
+  `retries.txt:3: ...`), the exit code is set to 1, and processing
+  continues with the next line.
 
 ### Examples
 
@@ -96,5 +100,4 @@ npm test
 
 ## Roadmap
 
-See open items in the repository for what's planned next, including
-better error messages that point at the offending line number.
+See open items in the repository for what's planned next.

@@ -50,14 +50,17 @@ function convertLine(line: string, opts: Options): string {
   return opts.to === 'raw' ? String(parseDuration(trimmed)) : formatDuration(Number(trimmed));
 }
 
-async function processSource(source: NodeJS.ReadableStream, opts: Options): Promise<void> {
+async function processSource(source: NodeJS.ReadableStream, label: string, opts: Options): Promise<void> {
   const rl = createInterface({ input: source, crlfDelay: Infinity });
+  let lineNumber = 0;
   for await (const line of rl) {
+    lineNumber += 1;
     try {
       console.log(convertLine(line, opts));
     } catch (err) {
       process.exitCode = 1;
-      console.error(`unitconv: ${err instanceof Error ? err.message : String(err)}`);
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`unitconv: ${label}:${lineNumber}: ${message}`);
     }
   }
 }
@@ -119,10 +122,10 @@ function parseArgs(argv: string[]): Options {
 async function main(): Promise<void> {
   const opts = parseArgs(process.argv.slice(2));
   if (opts.files.length === 0) {
-    await processSource(process.stdin, opts);
+    await processSource(process.stdin, 'stdin', opts);
   } else {
     for (const file of opts.files) {
-      await processSource(createReadStream(file, 'utf8'), opts);
+      await processSource(createReadStream(file, 'utf8'), file, opts);
     }
   }
 }
